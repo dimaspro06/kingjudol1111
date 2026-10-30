@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweet Bonanza - Edisi Web Interaktif</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Nunito', sans-serif;
+            user-select: none;
+        }
+        .font-sweet {
+            font-family: 'Fredoka One', cursive;
+            letter-spacing: 1px;
+        }
+        
+        /* Candy background gradient & patterns */
+        body {
+            background: radial-gradient(circle at 50% 30%, #ff9a9e 0%, #fecfef 40%, #a1c4fd 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sweet Bonanza Grid Tile Animation */
+        .candy-tile {
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease, box-shadow 0.2s ease;
+        }
+        .candy-tile:hover {
+            transform: scale(1.06);
+        }
+        .candy-pop {
+            animation: popExplode 0.35s ease-out forwards;
+        }
+        .candy-drop {
+            animation: dropIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .candy-win {
+            animation: winGlow 0.6s infinite alternate;
+        }
+
+        @keyframes popExplode {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3) rotate(12deg); opacity: 0.8; filter: brightness(1.5); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        @keyframes dropIn {
+            0% { transform: translateY(-40px) scale(0.8); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        @keyframes winGlow {
+            0% { transform: scale(1); box-shadow: 0 0 10px #fff, 0 0 20px #ff007f; }
+            100% { transform: scale(1.08); box-shadow: 0 0 20px #fff, 0 0 35px #ffea00; }
+        }
+
+        /* Glassmorphism containers */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .glass-grid {
+            background: rgba(88, 28, 135, 0.45);
+            backdrop-filter: blur(16px);
+            border: 4px solid rgba(255, 255, 255, 0.8);
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.3), 0 15px 35px rgba(124, 58, 237, 0.3);
+        }
+
+        /* Custom Scrollbar for Win History */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(236, 72, 153, 0.7);
+            border-radius: 10px;
+        }
+
+        /* Text strokes */
+        .stroke-text {
+            -webkit-text-stroke: 1.5px #701a75;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .stroke-text-yellow {
+            -webkit-text-stroke: 1.5px #854d0e;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+
+        /* Canvas overlay for particle confetti */
+        #confettiCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-800 pb-6">
+
+    <!-- Confetti Overlay -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- Top Navigation / Title Bar -->
+    <header class="w-full max-w-6xl mx-auto px-4 pt-3 flex flex-wrap justify-between items-center z-10 gap-3">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-r from-pink-500 to-purple-600 p-2.5 rounded-2xl shadow-lg border-2 border-white flex items-center justify-center">
+                <i class="fa-solid fa-candy-cane text-3xl text-white animate-bounce"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl md:text-4xl font-sweet text-white stroke-text tracking-wide drop-shadow-lg">
+                    SWEET BONANZA
+                </h1>
+                <p class="text-xs md:text-sm font-black text-pink-900 bg-white/60 px-2.5 py-0.5 rounded-full inline-block backdrop-blur-sm shadow-sm">
+                    Edisi Web Interaktif
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btnPaytable" class="bg-amber-400 hover:bg-amber-300 text-amber-950 font-extrabold px-3.5 py-2 rounded-xl border-2 border-white shadow-md transition transform active:scale-95 flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-book-open"></i> Paytable
+            </button>
+            <button id="btnMute" class="bg-purple-500 hover:bg-purple-400 text-white font-extrabold p-2.5 rounded-xl border-2 border-white shadow-md transition transform active:scale-95 text-sm">
+                <i id="audioIcon" class="fa-solid fa-volume-high"></i>
+            </button>
+            <button id="btnReset" class="bg-rose-500 hover:bg-rose-400 text-white font-extrabold px-3 py-2 rounded-xl border-2 border-white shadow-md transition transform active:scale-95 text-sm" title="Reset Saldo ke Rp 1.000.000">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Workspace -->
+    <main class="w-full max-w-6xl mx-auto px-2 md:px-4 mt-3 flex-grow flex flex-col justify-center">
+        
+        <!-- Top Status Bar (Balance, Win, FreeSpins Indicator) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <!-- Balance Card -->
+            <div class="glass-panel rounded-2xl p-3 flex items-center gap-3 border-l-4 border-l-emerald-500">
+                <div class="bg-emerald-500/20 text-emerald-700 p-3 rounded-xl">
+                    <i class="fa-solid fa-wallet text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-slate-600 block uppercase tracking-wider">Saldo Virtual</span>
+                    <span id="balanceText" class="text-lg md:text-xl font-black text-slate-900">Rp 10.000.000</span>
+                </div>
+            </div>
+
+            <!-- Current Bet Card -->
+            <div class="glass-panel rounded-2xl p-3 flex items-center gap-3 border-l-4 border-l-blue-500">
+                <div class="bg-blue-500/20 text-blue-700 p-3 rounded-xl">
+                    <i class="fa-solid fa-coins text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-slate-600 block uppercase tracking-wider">Taruhan saat ini</span>
+                    <span id="betText" class="text-lg md:text-xl font-black text-slate-900">Rp 10.000</span>
+                </div>
+            </div>
+
+            <!-- Win Display Card -->
+            <div class="glass-panel rounded-2xl p-3 flex items-center gap-3 border-l-4 border-l-amber-500 bg-amber-500/10">
+                <div class="bg-amber-500/20 text-amber-600 p-3 rounded-xl">
+                    <i class="fa-solid fa-trophy text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-slate-600 block uppercase tracking-wider">Kemenangan Spin</span>
+                    <span id="winText" class="text-lg md:text-xl font-black text-amber-600">Rp 0</span>
+                </div>
+            </div>
+
+            <!-- Free Spins Banner Card -->
+            <div id="fsBannerCard" class="glass-panel rounded-2xl p-3 flex items-center gap-3 border-l-4 border-l-pink-500 bg-pink-500/10">
+                <div class="bg-pink-500/20 text-pink-600 p-3 rounded-xl">
+                    <i class="fa-solid fa-star text-xl animate-spin" style="animation-duration: 4s;"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-slate-600 block uppercase tracking-wider">Mode Spin</span>
+                    <span id="fsStatusText" class="text-base font-black text-pink-600">Game Normal</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Play Area (Buy Feature + 6x5 Slot Board) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center justify-center">
+            
+            <!-- Left Side: Feature Buy -->
+            <div class="lg:col-span-4 flex flex-col gap-3 max-w-md mx-auto w-full">
+                <!-- Buy Free Spins Card -->
+                <div class="glass-panel rounded-3xl p-4 text-center border-2 border-pink-300 bg-gradient-to-b from-pink-400/30 to-purple-500/30">
+                    <div class="inline-block bg-pink-600 text-white font-black text-xs px-3 py-1 rounded-full uppercase tracking-widest mb-2 shadow-sm">
+                        Fitur Spesial
+                    </div>
+                    <h3 class="text-xl font-sweet text-white stroke-text mb-1">BELI FREE SPINS</h3>
+                    <p class="text-xs font-bold text-purple-950 mb-3">Garansi 10 Spin Gratis dengan Bom Pengali hingga 100x!</p>
+                    
+                    <div class="bg-white/70 rounded-2xl p-2 mb-3 border border-pink-200">
+                        <span class="text-xs font-bold text-slate-500 block">Harga Fitur (100x Bet)</span>
+                        <span id="buyPriceText" class="text-lg font-black text-pink-700">Rp 1.000.000</span>
+                    </div>
+
+                    <button id="btnBuySpins" class="w-full bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-white font-black py-3 rounded-2xl border-2 border-white shadow-lg transition transform active:scale-95 text-base flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bolt text-amber-300 text-lg"></i> BELI SEKARANG
+                    </button>
+                </div>
+            </div>
+
+            <!-- Center: 6x5 Slot Canvas Grid -->
+            <div class="lg:col-span-8 flex flex-col items-center w-full">
+                
+                <!-- Reel Grid Container -->
+                <div class="glass-grid rounded-3xl p-2 md:p-3 w-full max-w-lg relative overflow-hidden">
+                    
+                    <!-- Free Spins Active Indicator Overlay Banner -->
+                    <div id="fsActiveOverlay" class="hidden absolute top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-black px-4 py-1 rounded-full shadow-lg z-20 border border-white animate-pulse">
+                        FREE SPINS AKTIF
+                    </div>
+
+                    <!-- 6 Columns x 5 Rows Grid -->
+                    <div id="gridBoard" class="grid grid-cols-6 gap-1 md:gap-1.5 aspect-[6/5] w-full">
+                        <!-- Tiles generated dynamically via JS -->
+                    </div>
+
+                    <!-- Dynamic Flying Win Popup -->
+                    <div id="winFloatingPopup" class="hidden absolute inset-0 bg-black/40 backdrop-blur-xs z-30 flex flex-col items-center justify-center p-4 text-center pointer-events-none transition-all">
+                        <div id="winPopupBadge" class="font-sweet text-yellow-300 text-3xl md:text-5xl stroke-text-yellow animate-bounce drop-shadow-2xl">
+                            MENANG BESAR!
+                        </div>
+                        <div id="winPopupAmount" class="font-black text-white text-2xl md:text-4xl drop-shadow-md mt-1">
+                            + Rp 250.000
+                        </div>
+                        <div id="winPopupMultipliers" class="hidden mt-2 bg-purple-900/90 text-amber-300 px-3 py-1 rounded-full font-black text-sm border border-amber-400">
+                            Pengali Bom: 15x
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Banner / Status Msg -->
+                <div id="statusMessage" class="mt-2 text-center text-xs md:text-sm font-black text-purple-950 bg-white/70 px-4 py-1.5 rounded-full shadow-sm backdrop-blur-md min-h-[30px] flex items-center justify-center">
+                    Minimal 8 simbol yang sama di mana saja untuk menang!
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Bottom Controls Bar (Bet controls, Spin button, Auto Spin) -->
+        <div class="mt-4 glass-panel rounded-3xl p-3 md:p-4 flex flex-wrap items-center justify-between gap-3">
+            
+            <!-- Quick Bet Controls -->
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
+                <span class="text-xs font-black text-slate-600 uppercase hidden md:inline">Ubah Taruhan:</span>
+                <button class="btnBetQuick bg-white/80 hover:bg-white text-slate-800 font-extrabold px-2.5 py-1.5 rounded-xl border border-pink-200 text-xs transition active:scale-95" data-val="10000">10k</button>
+                <button class="btnBetQuick bg-white/80 hover:bg-white text-slate-800 font-extrabold px-2.5 py-1.5 rounded-xl border border-pink-200 text-xs transition active:scale-95" data-val="25000">25k</button>
+                <button class="btnBetQuick bg-white/80 hover:bg-white text-slate-800 font-extrabold px-2.5 py-1.5 rounded-xl border border-pink-200 text-xs transition active:scale-95" data-val="50000">50k</button>
+                <button class="btnBetQuick bg-white/80 hover:bg-white text-slate-800 font-extrabold px-2.5 py-1.5 rounded-xl border border-pink-200 text-xs transition active:scale-95" data-val="100000">100k</button>
+                <button id="btnBetMax" class="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-amber-950 font-black px-3 py-1.5 rounded-xl text-xs shadow-md transition active:scale-95">MAX</button>
+            </div>
+
+            <!-- Central Action Controls (Auto Spin, Main Spin Button) -->
+            <div class="flex items-center gap-3 mx-auto sm:mx-0">
+                
+                <!-- Auto Spin Button -->
+                <div class="relative">
+                    <button id="btnAutoSpin" class="bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold px-3.5 py-3 rounded-2xl border-2 border-white shadow-md transition transform active:scale-95 flex items-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-arrows-spin text-sm"></i>
+                        <span id="autoSpinLabel">AUTO</span>
+                    </button>
+                    <!-- Auto Spin Selector Dropup -->
+                    <div id="autoSpinMenu" class="hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-2 border border-purple-200 flex flex-col gap-1 z-40 w-28 text-center">
+                        <span class="text-[10px] font-black text-slate-400 uppercase">Pilih Spin</span>
+                        <button class="btnStartAuto font-extrabold text-slate-700 hover:bg-pink-100 p-1.5 rounded-xl text-xs" data-count="10">10 Spin</button>
+                        <button class="btnStartAuto font-extrabold text-slate-700 hover:bg-pink-100 p-1.5 rounded-xl text-xs" data-count="20">20 Spin</button>
+                        <button class="btnStartAuto font-extrabold text-slate-700 hover:bg-pink-100 p-1.5 rounded-xl text-xs" data-count="50">50 Spin</button>
+                    </div>
+                </div>
+
+                <!-- Main BIG Spin Button -->
+                <button id="btnSpin" class="bg-gradient-to-tr from-pink-500 via-rose-500 to-amber-400 hover:from-pink-400 hover:to-amber-300 text-white font-sweet text-xl md:text-2xl px-8 py-3.5 rounded-full border-4 border-white shadow-xl transition transform active:scale-90 flex items-center gap-2 stroke-text">
+                    <i class="fa-solid fa-play text-xl"></i>
+                    <span>SPIN</span>
+                </button>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Modal: Paytable & Rules -->
+    <div id="modalPaytable" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-panel bg-white/90 rounded-3xl max-w-2xl w-full p-5 max-h-[85vh] overflow-y-auto relative border-4 border-pink-300">
+            <button id="btnClosePaytable" class="absolute top-4 right-4 bg-slate-200 hover:bg-slate-300 text-slate-700 w-8 h-8 rounded-full flex items-center justify-center font-black">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="text-2xl font-sweet text-pink-600 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-candy-cane"></i> Tabel Pembayaran & Aturan Game
+            </h2>
+
+            <!-- Rules Summary -->
+            <div class="bg-purple-50 p-3 rounded-2xl mb-4 border border-purple-200 text-xs text-purple-900 leading-relaxed font-semibold">
+                <p class="font-bold text-sm mb-1 text-purple-950">Mekanik Permainan:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li><b>Sistem Pay Anywhere:</b> Minimal 8 simbol yang sama di mana saja pada grid 6x5 menghasilkan kemenangan.</li>
+                    <li><b>Fitur Tumble (Runtuhan):</b> Simbol menang akan pecah & menghilang, simbol di atasnya runtuh turun, dan simbol baru mengisi dari atas!</li>
+                    <li><b>Scatter (Lollipop):</b> 4 atau lebih simbol Lollipop memicu <b>10 Free Spins</b> gratis.</li>
+                    <li><b>Bom Multiplier:</b> Muncul secara acak pada mode Free Spins dengan nilai pengali dari 2x hingga 100x!</li>
+                </ul>
+            </div>
+
+            <h3 class="text-sm font-black text-slate-600 uppercase mb-3">Nilai Pembayaran Simbol (Multiplikasi Taruhan)</h3>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs" id="paytableGrid">
+                <!-- Dynamically Populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        /* --- GAME SYMBOLS DEFINITION --- */
+        const SYMBOLS = [
+            { id: 'heart', name: 'Permen Hati', type: 'candy', color: '#ef4444', 
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M50 88 C20 60 5 40 5 25 A 20 20 0 0 1 45 15 L 50 20 L 55 15 A 20 20 0 0 1 95 25 C 95 40 80 60 50 88 Z" fill="#ef4444" stroke="#b91c1c" stroke-width="4"/><path d="M25 25 A 8 8 0 0 1 35 20" fill="none" stroke="#fca5a5" stroke-width="4" stroke-linecap="round"/></svg>`,
+              payouts: { 8: 10, 10: 25, 12: 50 } },
+            
+            { id: 'purple_candy', name: 'Permen Ungu', type: 'candy', color: '#a855f7',
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><rect x="15" y="15" width="70" height="70" rx="18" fill="#a855f7" stroke="#7e22ce" stroke-width="4"/><path d="M25 30 L40 20" fill="none" stroke="#f0abfc" stroke-width="4" stroke-linecap="round"/></svg>`,
+              payouts: { 8: 2.5, 10: 10, 12: 25 } },
+
+            { id: 'green_candy', name: 'Permen Hijau', type: 'candy', color: '#22c55e',
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="50,10 90,38 75,85 25,85 10,38" fill="#22c55e" stroke="#15803d" stroke-width="4"/><polygon points="40,25 60,25 50,20" fill="#86efac"/></svg>`,
+              payouts: { 8: 2, 10: 5, 12: 15 } },
+
+            { id: 'blue_candy', name: 'Permen Biru', type: 'candy', color: '#3b82f6',
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><ellipse cx="50" cy="50" rx="40" ry="30" fill="#3b82f6" stroke="#1d4ed8" stroke-width="4"/><ellipse cx="40" cy="40" rx="15" ry="8" fill="#93c5fd"/></svg>`,
+              payouts: { 8: 1.5, 10: 2, 12: 12 } },
+
+            { id: 'apple', name: 'Apel Merah', type: 'fruit', color: '#dc2626',
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="55" r="35" fill="#dc2626" stroke="#991b1b" stroke-width="4"/><path d="M50 20 C 50 10 60 10 65 15" stroke="#15803d" stroke-width="5" fill="none"/><path d="M35 35 Q 45 25 45 40" stroke="#fca5a5" stroke-width="4" fill="none"/></svg>`,
+              payouts: { 8: 1, 10: 1.5, 12: 10 } },
+
+            { id: 'plum', name: 'Plum Ungu', type: 'fruit', color: '#9333ea',
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><ellipse cx="50" cy="55" rx="32" ry="38" fill="#9333ea" stroke="#6b21a8" stroke-width="4"/><path d="M50 20 Q 55 10 60 15" stroke="#15803d" stroke-width="4" fill="none"/></svg>`,
+              payouts: { 8: 0.8, 10: 1.2, 12: 8 } },
+
+            { id: 'watermelon', name: 'Semangka', type: 'fruit', color: '#16a34a',
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M10 40 A 40 40 0 0 0 90 40 Z" fill="#ef4444" stroke="#16a34a" stroke-width="8"/><circle cx="35" cy="55" r="3" fill="#000"/><circle cx="50" cy="65" r="3" fill="#000"/><circle cx="65" cy="55" r="3" fill="#000"/></svg>`,
+              payouts: { 8: 0.5, 10: 1, 12: 5 } },
+
+            { id: 'grapes', name: 'Anggur', type: 'fruit', color: '#7e22ce',
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="35" cy="40" r="14" fill="#7e22ce"/><circle cx="65" cy="40" r="14" fill="#7e22ce"/><circle cx="50" cy="55" r="14" fill="#7e22ce"/><circle cx="50" cy="75" r="12" fill="#7e22ce"/><path d="M50 25 L50 10" stroke="#15803d" stroke-width="4"/></svg>`,
+              payouts: { 8: 0.4, 10: 0.9, 12: 4 } },
+
+            { id: 'banana', name: 'Pisang', type: 'fruit', color: '#eab308',
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M20 70 Q 50 95 80 30 Q 60 65 20 70 Z" fill="#eab308" stroke="#ca8a04" stroke-width="4"/></svg>`,
+              payouts: { 8: 0.25, 10: 0.75, 12: 2 } },
+
+            { id: 'scatter', name: 'Lollipop (Scatter)', type: 'scatter', color: '#ec4899',
+              svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="40" r="32" fill="#ec4899" stroke="#be185d" stroke-width="4"/><path d="M50 40 m -22 0 a 22 22 0 1 0 44 0 a 22 22 0 1 0 -44 0" fill="none" stroke="#fff" stroke-width="5"/><rect x="46" y="70" width="8" height="28" rx="4" fill="#fde047" stroke="#ca8a04" stroke-width="2"/></svg>`,
+              payouts: { 4: 3, 5: 5, 6: 100 } }
+        ];
+
+        // Multiplier Values for Bombs in Free Spins
+        const MULTIPLIER_VALUES = [2, 3, 5, 8, 10, 15, 25, 50, 100];
+
+        /* --- AUDIO SYNTHESIZER (Web Audio API) --- */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playTone(freq, duration, type = 'sine', gainVal = 0.1) {
+                if (this.muted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            }
+
+            playSpin() {
+                this.init();
+                this.playTone(300, 0.08, 'triangle', 0.15);
+            }
+
+            playPop(cascadeStep = 1) {
+                this.init();
+                const freq = 400 + (cascadeStep * 120);
+                this.playTone(freq, 0.15, 'sine', 0.2);
+            }
+
+            playScatter() {
+                this.init();
+                this.playTone(880, 0.3, 'sine', 0.25);
+                setTimeout(() => this.playTone(1174, 0.4, 'sine', 0.25), 100);
+            }
+
+            playBigWin() {
+                this.init();
+                const notes = [523, 659, 783, 1046, 1318];
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => this.playTone(freq, 0.3, 'triangle', 0.25), idx * 120);
+                });
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        /* --- GAME STATE --- */
+        const ROWS = 5;
+        const COLS = 6;
+        let balance = 10000000;
+        let currentBet = 10000;
+        let inFreeSpins = false;
+        let freeSpinsLeft = 0;
+        let totalFreeSpinWin = 0;
+        let autoSpinsLeft = 0;
+        let isSpinning = false;
+        let gridData = []; // 5x6 array of symbol objects
+
+        /* --- DOM ELEMENTS --- */
+        const gridBoard = document.getElementById('gridBoard');
+        const balanceText = document.getElementById('balanceText');
+        const betText = document.getElementById('betText');
+        const winText = document.getElementById('winText');
+        const buyPriceText = document.getElementById('buyPriceText');
+        const fsStatusText = document.getElementById('fsStatusText');
+        const fsBannerCard = document.getElementById('fsBannerCard');
+        const fsActiveOverlay = document.getElementById('fsActiveOverlay');
+        const btnSpin = document.getElementById('btnSpin');
+        const btnBuySpins = document.getElementById('btnBuySpins');
+        const btnAutoSpin = document.getElementById('btnAutoSpin');
+        const autoSpinMenu = document.getElementById('autoSpinMenu');
+        const autoSpinLabel = document.getElementById('autoSpinLabel');
+        const statusMessage = document.getElementById('statusMessage');
+        const winFloatingPopup = document.getElementById('winFloatingPopup');
+        const winPopupBadge = document.getElementById('winPopupBadge');
+        const winPopupAmount = document.getElementById('winPopupAmount');
+        const winPopupMultipliers = document.getElementById('winPopupMultipliers');
+
+        /* --- INITIALIZATION --- */
+        window.addEventListener('DOMContentLoaded', () => {
+            initGrid();
+            updateUI();
+            renderPaytableModal();
+            setupEventListeners();
+        });
+
+        /* --- BOARD & GRID HELPERS --- */
+        function initGrid() {
+            gridData = [];
+            for (let r = 0; r < ROWS; r++) {
+                const row = [];
+                for (let c = 0; c < COLS; c++) {
+                    row.push(getRandomSymbol());
+                }
+                gridData.push(row);
+            }
+            renderBoard();
+        }
+
+        function getRandomSymbol() {
+            if (inFreeSpins && Math.random() < 0.15) {
+                const val = MULTIPLIER_VALUES[Math.floor(Math.random() * MULTIPLIER_VALUES.length)];
+                return {
+                    id: 'multiplier_' + Math.random(),
+                    name: `Bom Pengali ${val}x`,
+                    type: 'multiplier',
+                    val: val,
+                    color: '#f59e0b'
+                };
+            }
+
+            const rand = Math.random();
+            if (rand < 0.05) {
+                return SYMBOLS.find(s => s.id === 'scatter');
+            }
+            
+            const regularSymbols = SYMBOLS.filter(s => s.id !== 'scatter');
+            return regularSymbols[Math.floor(Math.random() * regularSymbols.length)];
+        }
+
+        function renderBoard() {
+            gridBoard.innerHTML = '';
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const sym = gridData[r][c];
+                    if (sym) {
+                        const tileEl = createTileElement(sym, r, c);
+                        gridBoard.appendChild(tileEl);
+                    } else {
+                        const emptyEl = document.createElement('div');
+                        emptyEl.className = 'aspect-square rounded-2xl bg-white/5 border border-white/10';
+                        gridBoard.appendChild(emptyEl);
+                    }
+                }
+            }
+        }
+
+        function formatRP(num) {
+            return 'Rp ' + Math.floor(num).toLocaleString('id-ID');
+        }
+
+        function showStatus(msg) {
+            statusMessage.textContent = msg;
+        }
+
+        function setupEventListeners() {
+            btnSpin.addEventListener('click', () => handleUserSpin());
+            btnBuySpins.addEventListener('click', () => buyFreeSpinsFeature());
+            
+            // Bet presets
+            document.querySelectorAll('.btnBetQuick').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (isSpinning || inFreeSpins) return;
+                    currentBet = parseInt(e.target.dataset.val);
+                    updateUI();
+                });
+            });
+
+            document.getElementById('btnBetMax').addEventListener('click', () => {
+                if (isSpinning || inFreeSpins) return;
+                currentBet = 100000;
+                updateUI();
+            });
+
+            // Reset balance
+            document.getElementById('btnReset').addEventListener('click', () => {
+                if (isSpinning) return;
+                balance = 10000000;
+                updateUI();
+                showStatus("Saldo berhasil di-reset ke Rp 10.000.000");
+            });
+
+            // Mute button
+            document.getElementById('btnMute').addEventListener('click', () => {
+                sound.muted = !sound.muted;
+                const icon = document.getElementById('audioIcon');
+                icon.className = sound.muted ? "fa-solid fa-volume-xmark" : "fa-solid fa-volume-high";
+            });
+
+            // Auto Spin toggle
+            btnAutoSpin.addEventListener('click', () => {
+                if (isSpinning) return;
+                autoSpinMenu.classList.toggle('hidden');
+            });
+
+            document.querySelectorAll('.btnStartAuto').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    autoSpinMenu.classList.add('hidden');
+                    autoSpinsLeft = parseInt(e.target.dataset.count);
+                    updateUI();
+                    if (!isSpinning) handleUserSpin();
+                });
+            });
+
+            // Paytable modal
+            document.getElementById('btnPaytable').addEventListener('click', () => {
+                document.getElementById('modalPaytable').classList.remove('hidden');
+            });
+            document.getElementById('btnClosePaytable').addEventListener('click', () => {
+                document.getElementById('modalPaytable').classList.add('hidden');
+            });
+        }
+
+        /* --- UI UPDATER --- */
+        function updateUI() {
+            balanceText.textContent = formatRP(balance);
+            betText.textContent = formatRP(currentBet);
+            buyPriceText.textContent = formatRP(currentBet * 100);
+
+            if (inFreeSpins) {
+                fsStatusText.textContent = `${freeSpinsLeft} Spin Gratis Sisa`;
+                fsBannerCard.classList.add('bg-pink-500/30', 'border-pink-500');
+                fsActiveOverlay.classList.remove('hidden');
+            } else {
+                fsStatusText.textContent = `Game Normal`;
+                fsBannerCard.classList.remove('bg-pink-500/30', 'border-pink-500');
+                fsActiveOverlay.classList.add('hidden');
+            }
+
+            if (autoSpinsLeft > 0) {
+                autoSpinLabel.textContent = `AUTO (${autoSpinsLeft})`;
+                btnAutoSpin.classList.add('bg-amber-500');
+            } else {
+                autoSpinLabel.textContent = `AUTO`;
+                btnAutoSpin.classList.remove('bg-amber-500');
+            }
+        }
+
+        function createTileElement(sym, r, c) {
+            const div = document.createElement('div');
+            div.className = `candy-tile candy-drop bg-white/20 backdrop-blur-sm rounded-2xl p-1.5 flex flex-col items-center justify-center border border-white/40 shadow-inner relative overflow-hidden aspect-square`;
+            div.dataset.row = r;
+            div.dataset.col = c;
+
+            if (sym.type === 'multiplier') {
+                div.innerHTML = `
+                    <div class="w-full h-full rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-yellow-300 flex flex-col items-center justify-center text-white border-2 border-white shadow-lg animate-pulse">
+                        <i class="fa-solid fa-bomb text-lg md:text-2xl drop-shadow-md"></i>
+                        <span class="font-sweet text-sm md:text-base font-black stroke-text">${sym.val}x</span>
+                    </div>
+                `;
+            } else if (sym.svg) {
+                div.innerHTML = sym.svg;
+            }
+            return div;
+        }
+
+        /* --- SPIN PIPELINE & TUMBLE ENGINE --- */
+        async function handleUserSpin() {
+            if (isSpinning) return;
+
+            // Balance validation
+            if (!inFreeSpins) {
+                if (balance < currentBet) {
+                    showStatus("Saldo Anda tidak cukup! Kurangi taruhan atau reset saldo.");
+                    autoSpinsLeft = 0;
+                    updateUI();
+                    return;
+                }
+                balance -= currentBet;
+            } else {
+                freeSpinsLeft--;
+            }
+
+            isSpinning = true;
+            btnSpin.disabled = true;
+            btnSpin.classList.add('opacity-50');
+            winText.textContent = "Rp 0";
+            showStatus("Putaran sedang berlangsung...");
+            updateUI();
+
+            // Perform spin flow
+            await spinGridAnimation();
+            await processTumbleSequence();
+
+            // Handle Free Spins end / trigger
+            if (inFreeSpins && freeSpinsLeft <= 0) {
+                inFreeSpins = false;
+                showStatus(`Free Spins Selesai! Total Hadiah: ${formatRP(totalFreeSpinWin)}`);
+                triggerConfetti();
+                sound.playBigWin();
+            }
+
+            isSpinning = false;
+            btnSpin.disabled = false;
+            btnSpin.classList.remove('opacity-50');
+
+            // Handle Auto Spin queue
+            if (autoSpinsLeft > 0 && balance >= currentBet) {
+                autoSpinsLeft--;
+                updateUI();
+                setTimeout(() => handleUserSpin(), 600);
+            } else if (autoSpinsLeft > 0) {
+                autoSpinsLeft = 0;
+                updateUI();
+            }
+        }
+
+        async function buyFreeSpinsFeature() {
+            if (isSpinning || inFreeSpins) return;
+            const price = currentBet * 100;
+            if (balance < price) {
+                showStatus("Saldo tidak cukup untuk Beli Free Spins!");
+                return;
+            }
+
+            balance -= price;
+            inFreeSpins = true;
+            freeSpinsLeft = 10;
+            totalFreeSpinWin = 0;
+            showStatus("FITUR FREE SPINS DIBELI! 10 Putaran Gratis Dimulai!");
+            sound.playBigWin();
+            triggerConfetti();
+            updateUI();
+
+            setTimeout(() => handleUserSpin(), 1000);
+        }
+
+        async function spinGridAnimation() {
+            sound.playSpin();
+            // Create brand new random grid
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    gridData[r][c] = getRandomSymbol();
+                }
+            }
+            renderBoard();
+            await sleep(350);
+        }
+
+        async function processTumbleSequence() {
+            let totalSpinWin = 0;
+            let cascadeStep = 0;
+            let multipliersOnScreen = [];
+            let scatterCount = 0;
+
+            while (true) {
+                // Count symbols frequency
+                const counts = {};
+                scatterCount = 0;
+                multipliersOnScreen = [];
+
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        const sym = gridData[r][c];
+                        if (sym.type === 'scatter') {
+                            scatterCount++;
+                        } else if (sym.type === 'multiplier') {
+                            multipliersOnScreen.push(sym.val);
+                        } else {
+                            counts[sym.id] = (counts[sym.id] || 0) + 1;
+                        }
+                    }
+                }
+
+                // Check winning combinations (8+ of any regular symbol)
+                const winningSymbolIds = [];
+                let stepWin = 0;
+
+                for (const [id, count] of Object.entries(counts)) {
+                    if (count >= 8) {
+                        winningSymbolIds.push(id);
+                        const symObj = SYMBOLS.find(s => s.id === id);
+                        let mult = symObj.payouts[8];
+                        if (count >= 12) mult = symObj.payouts[12];
+                        else if (count >= 10) mult = symObj.payouts[10];
+                        
+                        stepWin += (mult * currentBet);
+                    }
+                }
+
+                // If no winning regular combinations, cascade stops
+                if (winningSymbolIds.length === 0) {
+                    break;
+                }
+
+                // We have a cascade win!
+                cascadeStep++;
+                sound.playPop(cascadeStep);
+                totalSpinWin += stepWin;
+
+                // Mark and animate winning tiles
+                const tilesToPop = [];
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        if (winningSymbolIds.includes(gridData[r][c].id)) {
+                            tilesToPop.push({ r, c });
+                            const tileEl = gridBoard.children[r * COLS + c];
+                            if (tileEl) tileEl.classList.add('candy-pop', 'candy-win');
+                        }
+                    }
+                }
+
+                showStatus(`Runtuhan ${cascadeStep}: +${formatRP(stepWin)}`);
+                await sleep(450);
+
+                // Clear winning tiles in gridData
+                for (const pos of tilesToPop) {
+                    gridData[pos.r][pos.c] = null;
+                }
+
+                // Tumble / Gravity drop
+                for (let c = 0; c < COLS; c++) {
+                    let emptyRow = ROWS - 1;
+                    for (let r = ROWS - 1; r >= 0; r--) {
+                        if (gridData[r][c] !== null) {
+                            gridData[emptyRow][c] = gridData[r][c];
+                            if (emptyRow !== r) gridData[r][c] = null;
+                            emptyRow--;
+                        }
+                    }
+                    // Fill top empty cells with new symbols
+                    for (let r = emptyRow; r >= 0; r--) {
+                        gridData[r][c] = getRandomSymbol();
+                    }
+                }
+
+                renderBoard();
+                await sleep(350);
+            }
+
+            // Check Scatters trigger (4 or more)
+            if (scatterCount >= 4) {
+                sound.playScatter();
+                const scatterSym = SYMBOLS.find(s => s.id === 'scatter');
+                const scMult = scatterSym.payouts[Math.min(scatterCount, 6)] || 3;
+                totalSpinWin += (scMult * currentBet);
+
+                if (!inFreeSpins) {
+                    inFreeSpins = true;
+                    freeSpinsLeft = 10;
+                    totalFreeSpinWin = 0;
+                    showStatus(`🎉 4+ SCATTER HIT! 10 FREE SPINS DIPICU! 🎉`);
+                    triggerConfetti();
+                } else {
+                    freeSpinsLeft += 5;
+                    showStatus(`🎉 RETRIGGER! +5 FREE SPINS TAMBAHAN! 🎉`);
+                }
+            }
+
+            // Apply Multipliers if present and total cascade win > 0
+            let finalSpinPayout = totalSpinWin;
+            if (multipliersOnScreen.length > 0 && totalSpinWin > 0) {
+                const totalMultSum = multipliersOnScreen.reduce((a, b) => a + b, 0);
+                finalSpinPayout = totalSpinWin * totalMultSum;
+                
+                showBigWinPopup(`BOM PENGALI ${totalMultSum}x!`, finalSpinPayout, `Nilai Bom: ${multipliersOnScreen.join('x + ')}x`);
+                sound.playBigWin();
+                triggerConfetti();
+                await sleep(1200);
+            } else if (finalSpinPayout > currentBet * 5) {
+                showBigWinPopup(`MENANG BESAR!`, finalSpinPayout);
+                sound.playBigWin();
+                triggerConfetti();
+                await sleep(1000);
+            }
+
+            // Update Balances
+            if (finalSpinPayout > 0) {
+                balance += finalSpinPayout;
+                if (inFreeSpins) totalFreeSpinWin += finalSpinPayout;
+
+                winText.textContent = formatRP(finalSpinPayout);
+            }
+
+            updateUI();
+        }
+
+        /* --- WIN POPUPS --- */
+        function showBigWinPopup(title, amount, multText = '') {
+            winPopupBadge.textContent = title;
+            winPopupAmount.textContent = formatRP(amount);
+            if (multText) {
+                winPopupMultipliers.textContent = multText;
+                winPopupMultipliers.classList.remove('hidden');
+            } else {
+                winPopupMultipliers.classList.add('hidden');
+            }
+
+            winFloatingPopup.classList.remove('hidden');
+            setTimeout(() => {
+                winFloatingPopup.classList.add('hidden');
+            }, 1800);
+        }
+
+        /* --- PAYTABLE MODAL RENDER --- */
+        function renderPaytableModal() {
+            const container = document.getElementById('paytableGrid');
+            container.innerHTML = '';
+
+            SYMBOLS.forEach(sym => {
+                const card = document.createElement('div');
+                card.className = "bg-purple-100/70 p-2.5 rounded-2xl flex items-center gap-2 border border-purple-200";
+                
+                let payoutInfo = '';
+                if (sym.payouts) {
+                    payoutInfo = Object.entries(sym.payouts)
+                        .map(([count, val]) => `<div class="flex justify-between"><span>${count}+ simbol:</span> <b class="text-pink-700">${val}x Bet</b></div>`)
+                        .join('');
+                }
+
+                card.innerHTML = `
+                    <div class="w-12 h-12 flex-shrink-0">${sym.svg}</div>
+                    <div class="flex-grow text-[11px] font-bold text-slate-700">
+                        <div class="font-extrabold text-slate-900">${sym.name}</div>
+                        ${payoutInfo}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        /* --- CONFETTI PARTICLE CANVAS SYSTEM --- */
+        const canvas = document.getElementById('confettiCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function triggerConfetti() {
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 14,
+                    vy: (Math.random() - 0.7) * 16,
+                    size: Math.random() * 8 + 4,
+                    color: ['#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#a855f7'][Math.floor(Math.random() * 5)],
+                    alpha: 1
+                });
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.4; // Gravity
+                p.alpha -= 0.015;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(p.alpha, 0);
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                if (p.alpha <= 0) particles.splice(idx, 1);
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        /* --- UTILS --- */
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
